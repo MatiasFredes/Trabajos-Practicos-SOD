@@ -1,0 +1,248 @@
+\documentclass[12pt,a4paper,titlepage]{article}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{titlepic}
+\usepackage{lipsum}
+\usepackage[svgnames]{xcolor}
+\usepackage[tikz]{bclogo}
+\usepackage{minted}
+
+% Default fixed font does not support bold face
+\DeclareFixedFont{\ttb}{T1}{txtt}{bx}{n}{12} % for bold
+\DeclareFixedFont{\ttm}{T1}{txtt}{m}{n}{12}  % for normal
+
+% Custom colors
+\usepackage{color}
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+
+% Python style for highlighting
+\newcommand\pythonstyle{\lstset{
+language=Python,
+basicstyle=\ttm,
+otherkeywords={self},             % Add keywords here
+keywordstyle=\ttb\color{deepblue},
+emph={MyClass,__init__},          % Custom highlighting
+emphstyle=\ttb\color{deepred},    % Custom highlighting style
+stringstyle=\color{deepgreen},
+frame=tb,                         % Any extra options here
+showstringspaces=false            % 
+}}
+
+% Python environment
+\lstnewenvironment{python}[1][]
+{
+\pythonstyle
+\lstset{#1}
+}
+{}
+
+% Python for external files
+\newcommand\pythonexternal[2][]{{
+\pythonstyle
+\lstinputlisting[#1]{#2}}}
+
+% Python for inline
+\newcommand\pythoninline[1]{{\pythonstyle\lstinline!#1!}}
+
+
+  
+\title{Universidad de Mor\'on\\ Trabajos pr\'acticos de sistemas operativos distribuidos(444)}
+
+\author{Mat\'ias Fredes \\Matricula: 38010252}
+ 
+\begin{document}
+    \maketitle
+    \newpage
+    \begin{bclogo}[logo=\bcattention, couleurBarre=red, noborder=true, 
+               couleur=LightSalmon]{Importante!}
+    Este trabajo pr\'actico fue desarrollado con el lenguaje de programaci\'on Python.\\
+    Para instalar Python en su computadora debe dirigirse a la siguiente URL: https://www.python.org/downloads/.\\
+    Para ejecutar los programa desde la consola, debe posicionarse en el directorio donde se encuentra el archivo y ejecutar el siguiente comando:\begin{minted}{bash}
+  $ python nombreArchivo.py
+    \end{minted}
+\end{bclogo}
+    \section{Mini servidor de comandos}
+    
+  
+    
+    
+    \noindent Desarrollar un mini servidor de comandos Linux y Un mini cliente Telnet para el Mini Servidor.\\
+    Es muy simple, el Cliente Mini Telnet envía un comando al Servidor, el Servidor lo ejecuta y le devuelve la salida del comando al Cliente, el cliente lo muestra por pantalla.\\
+    Desarrollar un servidor secuencial y un servidor concurrente utilizando procesos pesados(fork) y procesos livianos(thread).
+    \subsection{Cliente telnet}
+    \begin{python}
+    import socket
+    s = socket.socket()
+    s.connect(('192.168.239.132', 9999))
+    estado = True
+    while estado:
+        mensaje = raw_input("> ")
+        s.send(mensaje)
+        mensajeServidor = s.recv(4096)
+        if mensajeServidor == "quit":
+    	    s.close()
+    	    estado = False
+        else:
+            print mensajeServidor
+    \end{python}
+    \subsection{Servidor de comandos secuencial}
+    \begin{python}
+    import socket
+    from subprocess import check_output
+
+    class Server:
+        def __init__(self):
+        	self.host, self.port = '', 9999
+        	self.socket = socket.socket()
+        	self.socket.bind((self.host, self.port))
+    
+        def send(self, msg):
+        	if type(msg) == str: self.socketCliente.send(msg)
+        	elif type(msg) == list or tuple: self.socketCliente.send('\n'.join(msg))
+    
+        def recv(self):
+        	comando = self.socketCliente.recv(4096).strip()
+            if comando == "quit":
+                self.exit()
+            else: return comando
+    
+        def exit(self):
+           self.send("quit");
+           self.socketCliente.close(); self.run()
+        	# cierro la conexion y abro una nueva
+        
+        def ejecutarComando(self, comando):
+            return check_output(comando)    
+    
+        # main runtime
+        def run(self):
+            self.socket.listen(1)
+        	self.socketCliente, self.addr = self.socket.accept()
+        	while True:
+                comando = self.recv()
+                print comando
+                retorno = self.ejecutarComando(comando)
+                print retorno
+                self.send(retorno)
+    
+    
+    S = Server()
+    S.run()
+    \end{python}
+    
+     \subsection{Servidor de comandos concurrente con procesos pesados(fork)}
+    \begin{python}
+import socket
+import os
+import threading
+from subprocess import check_output
+
+class Server(object):
+    def __init__(self):
+    	self.host, self.port = '', 9999
+    	self.socket = socket.socket()
+    	self.socket.bind((self.host, self.port))
+
+    def send(self, msg,socketCliente):
+    	if type(msg) == str: socketCliente.send(msg)
+    	elif type(msg) == list or tuple: socketCliente.send('\n'.join(msg))
+
+    def recv(self,socketCliente):
+    	comando = socketCliente.recv(4096).strip()
+        if comando == "quit":
+            self.exit(socketCliente)
+        else: return comando
+
+    def exit(self,socketCliente):
+    	self.send("Hasta luego!",socketCliente);
+        socketCliente.close(); 
+	os._exit(0)
+    	
+    
+    def ejecutarComando(self,socketCliente):
+	while True:
+	    print "el hilo paso por el metodo"
+	    comando = self.recv(socketCliente)
+            if comando != '':
+	        print comando
+		print socketCliente
+		retorno = check_output(comando)
+		print retorno
+		self.send(retorno,socketCliente)
+    
+    def run(self):
+    	self.socket.listen(5)
+	while True:
+	    socketCliente,addr = self.socket.accept()
+	    print "el servidor agarro el cliente",socketCliente
+	    pid = os.fork()
+            if pid == 0:
+		self.ejecutarComando(socketCliente)
+	    else:
+        	pids = (os.getpid(), pid)
+		print ("padre: %d  hijo: %d\n" % pids)
+
+if __name__ == "__main__":
+    Server().run()
+
+    \end{python}
+     \subsection{Servidor de comandos concurrente con procesos liviano(thread)}
+    \begin{python}
+import socket
+import os
+import threading
+from subprocess import check_output
+
+class Server(object):
+    def __init__(self):
+    	self.host, self.port = '', 9999
+    	self.socket = socket.socket()
+    	self.socket.bind((self.host, self.port))
+
+    def send(self, msg,socketCliente):
+    	if type(msg) == str: socketCliente.send(msg)
+    	elif type(msg) == list or tuple: socketCliente.send('\n'.join(msg))
+
+    def recv(self,socketCliente):
+    	comando = socketCliente.recv(4096).strip()
+        if comando == "quit":
+            self.exit(socketCliente)
+        else: return comando
+
+    def exit(self,socketCliente):
+    	self.send("Hasta luego!",socketCliente);
+        socketCliente.close(); 
+    	
+    
+    def ejecutarComando(self,socketCliente):
+	while True:
+	    print "el hilo paso por el metodo"
+	    comando = self.recv(socketCliente)
+            if comando != '':
+	        print comando
+		print socketCliente
+		retorno = check_output(comando)
+		print retorno
+		self.send(retorno,socketCliente)
+    
+    def run(self):
+    	self.socket.listen(5)
+	while True:
+	    socketCliente,addr = self.socket.accept()
+	    print "el servidor agarro el cliente",socketCliente
+	   
+            t = threading.Thread(target=self.ejecutarComando,args=(socketCliente,))
+   	    t.start()
+	    print threading.currentThread()
+            
+
+
+if __name__ == "__main__":
+    Server().run()
+
+    \end{python}
+
+\end{document}
