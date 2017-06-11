@@ -1,0 +1,98 @@
+\documentclass[12pt,a4paper,titlepage]{article}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{titlepic}
+\usepackage{lipsum}
+\usepackage[svgnames]{xcolor}
+\usepackage[tikz]{bclogo}
+\usepackage{minted}
+
+% Default fixed font does not support bold face
+\DeclareFixedFont{\ttb}{T1}{txtt}{bx}{n}{12} % for bold
+\DeclareFixedFont{\ttm}{T1}{txtt}{m}{n}{12}  % for normal
+
+% Custom colors
+\usepackage{color}
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+
+% Python style for highlighting
+\newcommand\pythonstyle{\lstset{
+language=Python,
+basicstyle=\ttm,
+otherkeywords={self},             % Add keywords here
+keywordstyle=\ttb\color{deepblue},
+emph={MyClass,__init__},          % Custom highlighting
+emphstyle=\ttb\color{deepred},    % Custom highlighting style
+stringstyle=\color{deepgreen},
+frame=tb,                         % Any extra options here
+showstringspaces=false            % 
+}}
+
+% Python environment
+\lstnewenvironment{python}[1][]
+{
+\pythonstyle
+\lstset{#1}
+}
+{}
+
+% Python for external files
+\newcommand\pythonexternal[2][]{{
+\pythonstyle
+\lstinputlisting[#1]{#2}}}
+
+% Python for inline
+\newcommand\pythoninline[1]{{\pythonstyle\lstinline!#1!}}
+
+
+  
+\title{Universidad de Mor\'on\\ Trabajos pr\'acticos de sistemas operativos distribuidos(444)}
+
+\author{Mat\'ias Fredes \\Matricula: 38010252}
+ 
+\begin{document}
+    \maketitle
+    \newpage
+    \begin{bclogo}[logo=\bcattention, couleurBarre=red, noborder=true, 
+               couleur=LightSalmon]{Importante!}
+    Este trabajo pr\'actico fue desarrollado con el lenguaje de programaci\'on Python.\\
+    Para instalar Python en su computadora debe dirigirse a la siguiente URL: https://www.python.org/downloads/.\\
+    Para ejecutar los programa desde la consola, debe posicionarse en el directorio donde se encuentra el archivo y ejecutar el siguiente comando:\begin{minted}{bash}
+  $ python nombreArchivo.py
+    \end{minted}
+    \end{bclogo}
+    
+    \section{Mini cliente HTTP}
+    
+  \noindent Aquí tenemos un Mini Cliente Apache ejecutándose en un SO Linux Debian que hace
+conexi\'on con un Servidor Apache corriendo en un SO Windows XP.\\
+Es muy simple, el Cliente le pide un archivo al Servidor Apache, y este le envía el
+archivo al Cliente, y el Cliente lo muestra por pantalla.
+El alumno tiene que modificar el Cliente para que decodifique el archivo recibido
+quitando todo lo que corresponde al código html.
+     
+   
+    \subsection{Cliente HTTP}
+    \begin{python}
+import socket
+#gethostbyname_ex(HostName)-> Return a triple (hostname, aliaslist, ipaddrlist)
+hostName = 'www.rfc-es.org'
+IPhost = socket.gethostbyname_ex(hostName)[2][1]
+port = 80
+request = "GET / HTTP/1.1\nHost: " + hostName + "\r\n\r\n"
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((IPhost, port))
+s.sendall(request)
+print request
+response = s.recv(8000)
+
+print response
+    \end{python}
+  
+
+\end{document}
+
